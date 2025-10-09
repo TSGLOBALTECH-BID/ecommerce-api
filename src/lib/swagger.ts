@@ -10,6 +10,10 @@ export const swaggerOptions = {
     },
     servers: [
       {
+        url: 'https://ecommerce-api-one-gamma.vercel.app',
+        description: 'Production server'
+      },
+      {
         url: 'http://localhost:3000',
         description: 'Development server',
       },
