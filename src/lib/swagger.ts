@@ -2,6 +2,9 @@ import { join } from 'path'
 import swaggerJSDoc from 'swagger-jsdoc';
 import type { OpenAPIV3 } from 'openapi-types';
 
+import { readdirSync } from 'fs';
+
+
 // Helper function to get API paths for both dev and production
 function getApiPaths() {
   console.log('Environment:');
@@ -22,6 +25,8 @@ function getApiPaths() {
   ];
 }
 
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
+
 export const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
@@ -31,26 +36,23 @@ export const swaggerOptions = {
       description: 'E-Commerce API Documentation',
     },
     servers: [
-      {
-        url: 'https://ecommerce-api-one-gamma.vercel.app/api',  // Added /api
-        description: 'Production server'
-      },
-      {
-        url: 'http://localhost:3000/api',  // Added /api
+      // Always put the current environment first
+      ...(isProduction ? [] : [{
+        url: 'http://localhost:3000',  // Added /api for local development
         description: 'Development server',
+      }]),
+      {
+        url: 'https://ecommerce-api-one-gamma.vercel.app',  // Ensure /api is included
+        description: 'Production server'
       },
     ],
   },
   apis: getApiPaths(),
-  failOnErrors: process.env.NODE_ENV !== 'production', // Only fail in non-production
-  // Add these options for better file handling
+  failOnErrors: process.env.NODE_ENV !== 'production',
   apisSorter: 'alpha',
   operationsSorter: 'alpha',
   explorer: true,
-  // Add base path if your API is under a specific path
-  basePath: '/api',  // This helps with path resolution
 }
-
 
 export async function getSwaggerSpec(): Promise<OpenAPIV3.Document> {
   try {
@@ -62,16 +64,13 @@ export async function getSwaggerSpec(): Promise<OpenAPIV3.Document> {
       console.log('1. Current working directory:', process.cwd());
       console.log('2. Files in API directory:');
       
-      // List all files in the API directory
-      const fs = require('fs');
-      const path = require('path');
-      
-      const apiDir = path.join(process.cwd(), 'src/app/api');
+      const apiDir = join(process.cwd(), 'src/app/api');
       try {
-        const files = fs.readdirSync(apiDir, { recursive: true });
+        const files = readdirSync(apiDir, { recursive: true });
         console.log('Found files:', files);
-      } catch (err: unknown) {
-        console.error(`Error reading API directory (${apiDir}):`, (err as Error).message);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Error reading API directory (${apiDir}):`, errorMessage);
       }
     }
     
