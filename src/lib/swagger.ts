@@ -1,4 +1,21 @@
 import swaggerJSDoc from 'swagger-jsdoc'
+import { join } from 'path'
+
+// Helper function to get API paths for both dev and production
+function getApiPaths() {
+  // For Vercel production
+  if (process.env.VERCEL_ENV === 'production') {
+    return [
+      join(process.cwd(), 'app/api/**/route.js'),
+      join(process.cwd(), 'app/api/**/route.ts')
+    ]
+  }
+  // For local development
+  return [
+    join(process.cwd(), 'src/app/api/**/route.ts'),
+    join(process.cwd(), 'app/api/**/route.ts')
+  ]
+}
 
 export const swaggerOptions = {
   definition: {
@@ -19,12 +36,7 @@ export const swaggerOptions = {
       },
     ],
   },
-  apis: [
-    './src/app/api/**/route.ts',
-    './app/api/**/route.ts',
-    '**/src/app/api/**/route.ts',
-    '**/app/api/**/route.ts'
-  ],
+  apis: getApiPaths(),
 }
 
 export async function getSwaggerSpec() {
