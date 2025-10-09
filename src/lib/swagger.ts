@@ -19,7 +19,12 @@ export const swaggerOptions = {
       },
     ],
   },
-  apis: ['./src/app/api/**/route.ts'],
+  apis: [
+    './src/app/api/**/route.ts',
+    './app/api/**/route.ts',
+    '**/src/app/api/**/route.ts',
+    '**/app/api/**/route.ts'
+  ],
 }
 
 export async function getSwaggerSpec() {
