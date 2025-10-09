@@ -1,15 +1,20 @@
-import swaggerJSDoc from 'swagger-jsdoc'
 import { join } from 'path'
+import swaggerJSDoc from 'swagger-jsdoc';
+import type { OpenAPIV3 } from 'openapi-types';
 
 // Helper function to get API paths for both dev and production
 function getApiPaths() {
+  const isVercel = process.env.VERCEL === '1'
+  const isProduction = process.env.NODE_ENV === 'production'
+  
   // For Vercel production
-  if (process.env.VERCEL_ENV === 'production') {
+  if (isVercel || isProduction) {
     return [
-      join(process.cwd(), 'app/api/**/route.js'),
-      join(process.cwd(), 'app/api/**/route.ts')
+      join(process.cwd(), '.next/server/app/api/**/route.js'),
+      join(process.cwd(), 'app/api/**/route.js')
     ]
   }
+  
   // For local development
   return [
     join(process.cwd(), 'src/app/api/**/route.ts'),
@@ -37,8 +42,20 @@ export const swaggerOptions = {
     ],
   },
   apis: getApiPaths(),
+  // Enable this for better error messages
+  failOnErrors: true,
 }
 
-export async function getSwaggerSpec() {
-  return swaggerJSDoc(swaggerOptions)
+
+export async function getSwaggerSpec(): Promise<OpenAPIV3.Document> {
+  try {
+    const spec = await swaggerJSDoc(swaggerOptions) as OpenAPIV3.Document;
+    if (!spec.paths || Object.keys(spec.paths).length === 0) {
+      console.warn('No API paths found. Check your API route files and JSDoc comments.')
+    }
+    return spec
+  } catch (error) {
+    console.error('Error generating Swagger spec:', error)
+    throw error
+  }
 }
