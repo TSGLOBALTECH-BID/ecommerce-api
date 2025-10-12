@@ -104,6 +104,7 @@ export async function POST(request: Request) {
         data: {
           full_name: fullName,
           username: username,
+          emailRedirectTo: '',
         },
       },
     })
