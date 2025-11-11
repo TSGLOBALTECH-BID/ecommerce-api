@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
+import { 
+  successResponse, 
+  errorResponse, 
+  validationErrorResponse
+} from '@/types/api-response'
 
 // Input validation schema
 const signupSchema = z.object({
@@ -74,8 +79,17 @@ export async function POST(request: Request) {
     // Validate input
     const validation = signupSchema.safeParse(body)
     if (!validation.success) {
+      const errors = validation.error.issues.reduce<Record<string, string[]>>((acc, issue) => {
+        const path = issue.path.join('.')
+        if (!acc[path]) {
+          acc[path] = []
+        }
+        acc[path].push(issue.message)
+        return acc
+      }, {})
+      
       return NextResponse.json(
-        { error: validation.error.issues[0].message },
+        validationErrorResponse('Validation failed', errors),
         { status: 400 }
       )
     }
@@ -91,7 +105,7 @@ export async function POST(request: Request) {
 
     if (existingUser) {
       return NextResponse.json(
-        { error: 'Email or username already in use' },
+        errorResponse('Email or username already in use', 400),
         { status: 400 }
       )
     }
@@ -110,52 +124,62 @@ export async function POST(request: Request) {
     })
 
     if (authError) {
-      console.error('Signup error:', authError)
-      throw new Error(authError.message)
+      return NextResponse.json(
+        errorResponse(authError.message, 400),
+        { status: 400 }
+      )
     }
 
     if (!authData.user) {
       throw new Error('Failed to create user')
     }
 
-    // const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    // if (sessionError || !session) {
-    //   throw new Error('Not authenticated');
-    // }
+    const { id } = authData.user
 
-    // Create user profile in the database
-    // const { data: profile, error: profileError } = await supabase
-    //   .from('profiles')
-    //   .insert([
-    //     {
-    //       id: authData.user.id,
-    //       updated_at: new Date().toISOString(),
-    //       username: username,
-    //       full_name: fullName,
-    //       avatar_url: ''
-    //     },
-    //   ]).select()
+    // Create user profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert([
+        {
+          id,
+          email,
+          full_name: fullName,
+          username,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }
+      ])
 
-    // if (profileError) {
-    //   console.error('Profile creation error:', profileError)
-    //   throw new Error('Failed to create user profile')
-    // }
+    if (profileError) {
+      // Rollback: Delete the auth user if profile creation fails
+      await supabase.auth.admin.deleteUser(id)
+      
+      return NextResponse.json(
+        errorResponse('Failed to create user profile', 500, profileError.message),
+        { status: 500 }
+      )
+    }
 
     return NextResponse.json(
-      {
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          fullName,
-          username,
+      successResponse(
+        {
+          user: {
+            id,
+            email,
+            fullName,
+            username
+          }
         },
-      },
+        'User registered successfully',
+        201
+      ),
       { status: 201 }
     )
   } catch (error) {
     console.error('Signup error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      errorResponse('Internal server error', 500, errorMessage),
       { status: 500 }
     )
   }
