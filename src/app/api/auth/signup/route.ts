@@ -15,7 +15,11 @@ const signupSchema = z.object({
   username: z.string()
     .min(3, 'Username must be at least 3 characters')
     .max(20, 'Username must be less than 20 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores')
+    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers and underscores'),
+  phone: z.string()
+    .min(10, 'Phone number must be at least 10 digits')
+    .max(15, 'Phone number must be less than 15 digits')
+    .regex(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
 })
 
 /**
@@ -35,6 +39,7 @@ const signupSchema = z.object({
  *               - password
  *               - fullName
  *               - username
+ *               - phone
  *             properties:
  *               email:
  *                 type: string
@@ -48,6 +53,11 @@ const signupSchema = z.object({
  *                 type: string
  *                 minLength: 3
  *                 maxLength: 20
+ *               phone:
+ *                 type: string
+ *                 minLength: 10
+ *                 maxLength: 15
+ *                 description: Phone number in international format (e.g., +1234567890)
  *     responses:
  *       201:
  *         description: User created successfully
@@ -66,6 +76,8 @@ const signupSchema = z.object({
  *                     fullName:
  *                       type: string
  *                     username:
+ *                       type: string
+ *                     phone:
  *                       type: string
  *       400:
  *         description: Invalid input or user already exists
@@ -94,7 +106,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const { email, password, fullName, username } = validation.data
+    const { email, password, phone, fullName, username } = validation.data
 
     // Check if email already exists
     const { data: existingUser } = await supabase
@@ -116,6 +128,7 @@ export async function POST(request: Request) {
       password,
       options: {
         data: {
+          phone: phone,
           full_name: fullName,
           username: username,
           emailRedirectTo: '',
@@ -137,28 +150,26 @@ export async function POST(request: Request) {
     const { id } = authData.user
 
     // Create user profile
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([
-        {
-          id,
-          email,
-          full_name: fullName,
-          username,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }
-      ])
+    // const { error: profileError } = await supabase
+    //   .from('profiles')
+    //   .insert([
+    //     {
+    //       id,
+    //       full_name: fullName,
+    //       username,
+    //       updated_at: new Date().toISOString()
+    //     }
+    //   ])
 
-    if (profileError) {
-      // Rollback: Delete the auth user if profile creation fails
-      await supabase.auth.admin.deleteUser(id)
+    // if (profileError) {
+    //   // Rollback: Delete the auth user if profile creation fails
+    //   await supabase.auth.admin.deleteUser(id)
       
-      return NextResponse.json(
-        errorResponse('Failed to create user profile', 500, profileError.message),
-        { status: 500 }
-      )
-    }
+    //   return NextResponse.json(
+    //     errorResponse('Failed to create user profile', 500, profileError.message),
+    //     { status: 500 }
+    //   )
+    // }
 
     return NextResponse.json(
       successResponse(
