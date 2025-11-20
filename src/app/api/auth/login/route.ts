@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { supabase } from '@/lib/supabase'
+import { 
+  successResponse, 
+  errorResponse, 
+  validationErrorResponse 
+} from '@/types/api-response'
 
 // Input validation schema
 const loginSchema = z.object({
@@ -69,8 +74,17 @@ export async function POST(request: Request) {
     // Validate input
     const validation = loginSchema.safeParse(body)
     if (!validation.success) {
+      const errors = validation.error.issues.reduce<Record<string, string[]>>((acc, issue) => {
+        const path = issue.path.join('.')
+        if (!acc[path]) {
+          acc[path] = []
+        }
+        acc[path].push(issue.message)
+        return acc
+      }, {})
+      
       return NextResponse.json(
-        { error: validation.error.issues[0].message },
+        validationErrorResponse('Validation failed', errors),
         { status: 400 }
       )
     }
@@ -86,14 +100,14 @@ export async function POST(request: Request) {
     if (error) {
       console.error('Login error:', error)
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        errorResponse('Invalid email or password', 401),
         { status: 401 }
       )
     }
 
     if (!data.session) {
       return NextResponse.json(
-        { error: 'No session created' },
+        errorResponse('No session created', 500),
         { status: 500 }
       )
     }
@@ -109,35 +123,46 @@ export async function POST(request: Request) {
       console.error('Profile fetch error:', profileError)
       // Don't fail the login if we can't get the profile
       // Just return the basic user info
-      return NextResponse.json({
-        user: {
-          id: data.user.id,
-          email: data.user.email,
-        },
-        session: {
-          access_token: data.session.access_token,
-          expires_in: data.session.expires_in,
-          refresh_token: data.session.refresh_token,
-        },
-      })
+      return NextResponse.json(
+        successResponse(
+          {
+            user: {
+              id: data.user.id,
+              email: data.user.email,
+            },
+            session: {
+              access_token: data.session.access_token,
+              expires_in: data.session.expires_in,
+              refresh_token: data.session.refresh_token,
+            }
+          },
+          'Login successful'
+        )
+      )
     }
 
-    return NextResponse.json({
-      user: {
-        id: data.user.id,
-        email: data.user.email,
-        fullName: profile.full_name,
-      },
-      session: {
-        access_token: data.session.access_token,
-        expires_in: data.session.expires_in,
-        refresh_token: data.session.refresh_token,
-      },
-    })
+    return NextResponse.json(
+      successResponse(
+        {
+          user: {
+            id: data.user.id,
+            email: data.user.email,
+            fullName: profile.full_name,
+          },
+          session: {
+            access_token: data.session.access_token,
+            expires_in: data.session.expires_in,
+            refresh_token: data.session.refresh_token,
+          }
+        },
+        'Login successful'
+      )
+    )
   } catch (error) {
     console.error('Login error:', error)
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      errorResponse('Internal server error', 500, errorMessage),
       { status: 500 }
     )
   }
