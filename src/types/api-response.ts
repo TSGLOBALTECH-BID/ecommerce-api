@@ -1,3 +1,25 @@
+interface ErrorDetails {
+  message: string;
+  code?: string | number;
+  details?: Record<string, string[]>;
+  stack?: string; // For development only
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+// Paginated response with metadata
+export interface PaginatedData<T> {
+  items: T[];
+  meta: PaginationMeta;
+}
+
 /**
  * Base response interface for all API responses
  * @template T Type of the data payload
@@ -12,11 +34,20 @@ export interface BaseResponse<T = unknown> {
   /** The actual response data (type T) */
   data?: T;
   
-  /** Error message (if any) */
-  error?: string;
+  /** Error details (if any) */
+  error?: ErrorDetails;
   
   /** HTTP status code */
   status: number;
+  
+  /** API version */
+  version: string;
+  
+  /** Timestamp of the response */
+  timestamp: string;
+  
+  /** Request ID for tracking */
+  requestId?: string;
 }
 
 /**
@@ -36,6 +67,8 @@ export function successResponse<T>(
     message,
     data,
     status,
+    version: '1.0',
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -54,9 +87,14 @@ export function errorResponse(
   return {
     success: false,
     message,
-    error: error || message,
+    error: {
+      message: error || message,
+      code: status,
+    },
     status,
-    data: null,
+    data: null as any,
+    version: '1.0', // Default version, can be configured
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -74,8 +112,14 @@ export function validationErrorResponse(
     success: false,
     message,
     status: 400,
-    error: message,
-    data: errors ? { errors } : undefined,
+    error: {
+      message,
+      code: 400,
+      details: errors
+    },
+    data: null as any,
+    version: '1.0',
+    timestamp: new Date().toISOString(),
   };
 }
 
