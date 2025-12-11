@@ -1,3 +1,5 @@
+import { NextResponse } from "next/server";
+
 interface ErrorDetails {
   message: string;
   code?: string | number;
@@ -51,6 +53,16 @@ export interface BaseResponse<T = unknown> {
 }
 
 /**
+ * Wraps a response object in NextResponse.json() with the provided status code
+ * @param response The response object to wrap
+ * @param status HTTP status code (default: 200)
+ * @returns NextResponse with JSON body
+ */
+function createApiResponse<T>(response: BaseResponse<T>, status = 200): NextResponse<BaseResponse<T>> {
+  return NextResponse.json(response, { status });
+}
+
+/**
  * Creates a success response
  * @param data Response data
  * @param message Optional success message
@@ -61,8 +73,8 @@ export function successResponse<T>(
   data: T,
   message?: string,
   status = 200
-): BaseResponse<T> {
-  return {
+): NextResponse<BaseResponse<T>> {
+  const response: BaseResponse<T> = {
     success: true,
     message,
     data,
@@ -70,6 +82,8 @@ export function successResponse<T>(
     version: '1.0',
     timestamp: new Date().toISOString(),
   };
+  
+  return createApiResponse(response, status);
 }
 
 /**
@@ -83,19 +97,21 @@ export function errorResponse(
   message: string,
   status = 500,
   error?: string
-): BaseResponse<null> {
-  return {
+): NextResponse<BaseResponse<null>> {
+  const response: BaseResponse<null> = {
     success: false,
     message,
+    data: null,
+    status,
     error: {
       message: error || message,
       code: status,
     },
-    status,
-    data: null as any,
-    version: '1.0', // Default version, can be configured
+    version: '1.0',
     timestamp: new Date().toISOString(),
   };
+
+  return createApiResponse(response, status);
 }
 
 /**
@@ -107,20 +123,22 @@ export function errorResponse(
 export function validationErrorResponse(
   message: string = 'Validation failed',
   errors?: Record<string, string[]>
-): BaseResponse<{ errors?: Record<string, string[]> }> {
-  return {
+): NextResponse<BaseResponse<{ errors?: Record<string, string[]> }>> {
+  const response: BaseResponse<{ errors?: Record<string, string[]> }> = {
     success: false,
     message,
     status: 400,
     error: {
-      message,
+      message: 'Validation Error',
       code: 400,
-      details: errors
+      details: errors,
     },
-    data: null as any,
+    data: errors ? { errors } : undefined,
     version: '1.0',
     timestamp: new Date().toISOString(),
   };
+
+  return createApiResponse(response, 400);
 }
 
 /**
@@ -128,7 +146,7 @@ export function validationErrorResponse(
  * @param message Optional custom not found message
  * @returns Formatted not found response
  */
-export function notFoundResponse(message: string = 'Resource not found'): BaseResponse<null> {
+export function notFoundResponse(message: string = 'Resource not found'): NextResponse<BaseResponse<null>> {
   return errorResponse(message, 404);
 }
 
@@ -137,7 +155,9 @@ export function notFoundResponse(message: string = 'Resource not found'): BaseRe
  * @param message Optional custom unauthorized message
  * @returns Formatted unauthorized response
  */
-export function unauthorizedResponse(message: string = 'Unauthorized'): BaseResponse<null> {
+export function unauthorizedResponse(
+  message: string = 'Unauthorized'
+): NextResponse<BaseResponse<null>> {
   return errorResponse(message, 401);
 }
 
@@ -146,6 +166,8 @@ export function unauthorizedResponse(message: string = 'Unauthorized'): BaseResp
  * @param message Optional custom forbidden message
  * @returns Formatted forbidden response
  */
-export function forbiddenResponse(message: string = 'Forbidden'): BaseResponse<null> {
+export function forbiddenResponse(
+  message: string = 'Forbidden'
+): NextResponse<BaseResponse<null>> {
   return errorResponse(message, 403);
 }

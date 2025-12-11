@@ -83,10 +83,7 @@ export async function POST(request: Request) {
         return acc
       }, {})
       
-      return NextResponse.json(
-        validationErrorResponse('Validation failed', errors),
-        { status: 400 }
-      )
+      return validationErrorResponse('Validation failed', errors)
     }
 
     const { email, password } = validation.data
@@ -99,17 +96,11 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error('Login error:', error)
-      return NextResponse.json(
-        errorResponse('Invalid email or password', 401),
-        { status: 401 }
-      )
+      return errorResponse('Invalid email or password', 401)
     }
 
     if (!data.session) {
-      return NextResponse.json(
-        errorResponse('No session created', 500),
-        { status: 500 }
-      )
+      return errorResponse('No session created', 500)
     }
 
     // Get user profile
@@ -123,8 +114,7 @@ export async function POST(request: Request) {
       console.error('Profile fetch error:', profileError)
       // Don't fail the login if we can't get the profile
       // Just return the basic user info
-      return NextResponse.json(
-        successResponse(
+      return successResponse(
           {
             user: {
               id: data.user.id,
@@ -138,11 +128,9 @@ export async function POST(request: Request) {
           },
           'Login successful'
         )
-      )
     }
 
-    return NextResponse.json(
-      successResponse(
+    return successResponse(
         {
           user: {
             id: data.user.id,
@@ -157,14 +145,10 @@ export async function POST(request: Request) {
         },
         'Login successful'
       )
-    )
   } catch (error) {
     console.error('Login error:', error)
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
-    return NextResponse.json(
-      errorResponse('Internal server error', 500, errorMessage),
-      { status: 500 }
-    )
+    return errorResponse('Internal server error', 500, errorMessage)
   }
 }
 

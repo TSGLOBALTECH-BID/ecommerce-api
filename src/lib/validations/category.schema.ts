@@ -10,7 +10,7 @@ export const createCategorySchema = z.object({
     .max(100, 'Slug must be less than 100 characters')
     .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must be URL-friendly (lowercase, numbers, hyphens)'),
   description: z.string().max(500, 'Description must be less than 500 characters').optional(),
-  parent_id: z.string().uuid('Invalid parent category ID').nullable().optional(),
+  parent_category_id: z.string().uuid('Invalid parent category ID').nullable().optional(),
   image_url: z.string().url('Invalid URL format').optional().or(z.literal('')),
   is_active: z.boolean().default(true).optional(),
 });

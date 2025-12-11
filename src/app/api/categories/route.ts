@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
 
     // Create category using service
     const newCategory = await CategoryService.createCategory(categoryData);
-
+    
     // Convert entity to response DTO
     const responseData = CategoryDto.toResponse(newCategory);
-
+    
     return successResponse(responseData, 'Category created successfully', 201);
   } catch (error) {
     console.error('Category creation error:', error);

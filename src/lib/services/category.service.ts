@@ -21,17 +21,19 @@ export class CategoryService {
     }
 
     // If parent_id is provided, verify it exists
-    if (payload.parent_id) {
+    if (payload.parent_category_id) {
       const { data: parent } = await supabase
         .from('categories')
         .select('id')
-        .eq('id', payload.parent_id)
+        .eq('id', payload.parent_category_id)
         .single();
 
       if (!parent) {
         throw new Error('Parent category not found');
       }
     }
+
+    // console.log('........',payload);
 
     // Create the category
     const { data: category, error } = await supabase
@@ -45,6 +47,7 @@ export class CategoryService {
       throw new Error('Failed to create category');
     }
 
+    // console.log('........>>>',category);
     return category;
   }
 

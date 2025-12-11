@@ -4,7 +4,7 @@ export interface Category {
   name: string;
   slug: string;
   description?: string;
-  parent_id: string | null;
+  parent_category_id: string | null;
   image_url?: string;
   is_active: boolean;
   created_at: string;
@@ -19,7 +19,7 @@ export interface CreateCategoryPayload {
   name: string;
   slug: string;
   description?: string;
-  parent_id?: string | null;
+  parent_category_id?: string | null;
   image_url?: string;
   is_active?: boolean;
 }

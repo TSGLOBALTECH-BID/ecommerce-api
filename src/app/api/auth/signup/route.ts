@@ -100,10 +100,7 @@ export async function POST(request: Request) {
         return acc
       }, {})
       
-      return NextResponse.json(
-        validationErrorResponse('Validation failed', errors),
-        { status: 400 }
-      )
+      return validationErrorResponse('Validation failed', errors)
     }
 
     const { email, password, phone, fullName, username } = validation.data
@@ -116,10 +113,7 @@ export async function POST(request: Request) {
       .single()
 
     if (existingUser) {
-      return NextResponse.json(
-        errorResponse('Email or username already in use', 400),
-        { status: 400 }
-      )
+      return errorResponse('Email or username already in use', 400)
     }
 
     // Create user in Supabase Auth
@@ -137,10 +131,7 @@ export async function POST(request: Request) {
     })
 
     if (authError) {
-      return NextResponse.json(
-        errorResponse(authError.message, 400),
-        { status: 400 }
-      )
+      return errorResponse(authError.message, 400)
     }
 
     if (!authData.user) {
@@ -165,14 +156,10 @@ export async function POST(request: Request) {
     //   // Rollback: Delete the auth user if profile creation fails
     //   await supabase.auth.admin.deleteUser(id)
       
-    //   return NextResponse.json(
-    //     errorResponse('Failed to create user profile', 500, profileError.message),
-    //     { status: 500 }
-    //   )
+    //   return errorResponse('Failed to create user profile', 500, profileError.message)
     // }
 
-    return NextResponse.json(
-      successResponse(
+    return successResponse(
         {
           user: {
             id,
@@ -183,16 +170,11 @@ export async function POST(request: Request) {
         },
         'User registered successfully',
         201
-      ),
-      { status: 201 }
-    )
+      )
   } catch (error) {
     console.error('Signup error:', error)
     const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred'
-    return NextResponse.json(
-      errorResponse('Internal server error', 500, errorMessage),
-      { status: 500 }
-    )
+    return errorResponse('Internal server error', 500, errorMessage)
   }
 }
 
