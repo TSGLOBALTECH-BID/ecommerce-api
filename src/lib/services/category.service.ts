@@ -24,8 +24,8 @@ export class CategoryService {
     if (payload.parent_category_id) {
       const { data: parent } = await supabase
         .from('categories')
-        .select('id')
-        .eq('id', payload.parent_category_id)
+        .select('category_id')
+        .eq('category_id', payload.parent_category_id)
         .single();
 
       if (!parent) {

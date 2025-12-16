@@ -1,5 +1,5 @@
 // src/lib/dtos/category.dto.ts
-import { categoryResponseSchema, WrappedCategoryResponse } from '@/types/respose/category-response';
+import { CategoriesResponse, categoryResponseSchema, WrappedCategoryResponse } from '@/types/respose/category-response';
 import { CreateCategoryPayload } from '../entities/category.entity';
 import { CreateCategoryDto } from '../validations/category.schema';
 
@@ -15,9 +15,9 @@ export class CategoryDto {
     };
   }
 
-  static toResponse(category: any): WrappedCategoryResponse {
+  static toCategoryResponse(category: any): WrappedCategoryResponse {
     const response = {
-      id: category.category_id,
+      category_id: category.category_id,
       name: category.name,
       slug: category.slug,
       description: category.description,
@@ -30,5 +30,31 @@ export class CategoryDto {
 
     // Validate the response matches our schema
     return { category: categoryResponseSchema.parse(response) };
+  }
+
+  static toCategoriesResponse(categories: any[]): CategoriesResponse {
+    const mappedCategories = categories.map(category => ({
+      category_id: category.category_id,
+      name: category.name,
+      slug: category.slug,
+      description: category.description,
+      parent_category_id: category.parent_category_id,
+      image_url: category.image_url,
+      is_active: category.is_active,
+      created_at: category.created_at,
+      updated_at: category.updated_at,
+    }));
+
+    // Validate and structure the response
+    return {
+
+      categories: mappedCategories.map(cat => categoryResponseSchema.parse(cat))
+      // Uncomment and add these when you implement pagination:
+      // total: totalCount,
+      // page: pageNumber,
+      // limit: pageSize,
+      // total_pages: Math.ceil(totalCount / pageSize)
+
+    };
   }
 }

@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
 
     // Create category using service
     const newCategory = await CategoryService.createCategory(categoryData);
-    
+
     // Convert entity to response DTO
-    const responseData = CategoryDto.toResponse(newCategory);
-    
+    const responseData = CategoryDto.toCategoryResponse(newCategory);
+
     return successResponse(responseData, 'Category created successfully', 201);
   } catch (error) {
     console.error('Category creation error:', error);
@@ -89,8 +89,9 @@ export async function GET() {
       .order('name', { ascending: true });
 
     if (error) throw error;
-
-    return successResponse(categories || []);
+    // Convert entity to response DTO
+    const responseData = CategoryDto.toCategoriesResponse(categories);
+    return successResponse(responseData || []);
   } catch (error) {
     console.error('Error fetching categories:', error);
     return errorResponse('Failed to fetch categories', 500);
