@@ -97,3 +97,4 @@ export async function GET() {
     return errorResponse('Failed to fetch categories', 500);
   }
 }
+
