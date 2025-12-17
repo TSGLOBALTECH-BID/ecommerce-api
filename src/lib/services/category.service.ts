@@ -51,6 +51,48 @@ export class CategoryService {
     return category;
   }
 
+  static async deleteCategory(id: string) {
+    // Check if category exists
+    const { data: category } = await supabase
+      .from('categories')
+      .select('category_id')
+      .eq('category_id', id)
+      .single();
+
+    if (!category) {
+      throw new Error('Category not found');
+    }
+
+    // Check if category has any child categories
+    const { data: childCategories } = await supabase
+      .from('categories')
+      .select('category_id')
+      .eq('parent_category_id', id);
+
+    if (childCategories && childCategories.length > 0) {
+      throw new Error('Cannot delete category with child categories');
+    }
+
+    // Delete the category
+    const { error } = await supabase
+      .from('categories')
+      .delete()
+      .eq('category_id', id);
+
+    if (error) {
+      if (error.code === '23503') {
+        // Extract the referencing table name from the error message
+        // const tableMatch = error.message.match(/referenced from table "([^"]+)"/);
+        // const tableName = tableMatch ? tableMatch[1] : 'another table';
+        throw new Error(`Cannot delete category: First delete related data like Produt etc.`);
+      }
+      console.error('Error deleting category:', error);
+      throw new Error('Failed to delete category');
+    }
+
+    return { success: true, message: 'Category deleted successfully' };
+  }
+
   static async updateCategory(id: string, payload: Partial<CreateCategoryPayload>) {
     // Check if category exists
     const { data: existingCategory } = await supabase
@@ -78,9 +120,9 @@ export class CategoryService {
     }
 
     // If parent_id is provided and different from current, verify it exists and doesn't create a circular reference
-    if (payload.parent_category_id !== undefined && 
-        payload.parent_category_id !== existingCategory.parent_category_id) {
-      
+    if (payload.parent_category_id !== undefined &&
+      payload.parent_category_id !== existingCategory.parent_category_id) {
+
       // Prevent setting a category as its own parent
       if (payload.parent_category_id === id) {
         throw new Error('A category cannot be its own parent');

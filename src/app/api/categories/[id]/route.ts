@@ -89,3 +89,64 @@ export async function PATCH(
     );
   }
 }
+
+/**
+ * @swagger
+ * /api/categories/{id}:
+ *   delete:
+ *     summary: Delete a category by ID
+ *     tags: [Categories]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The category ID
+ *     responses:
+ *       200:
+ *         description: Category deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *       404:
+ *         description: Category not found
+ *       400:
+ *         description: Cannot delete category with child categories or related data exists
+ *       500:
+ *         description: Internal server error
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const categoryId = params.id;
+
+    if (!categoryId) {
+      return errorResponse('Category ID is required', 400);
+    }
+
+    // Delete the category using the service
+    const result = await CategoryService.deleteCategory(categoryId);
+
+    return successResponse(result, result.message);
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    if (error instanceof Error) {
+      if (error.message.includes('Cannot delete category')) {
+        return errorResponse(error.message, 400);
+      }
+      if (error.message === 'Category not found') {
+        return errorResponse(error.message, 404);
+      }
+    }
+    return errorResponse('Failed to delete category', 500);
+  }
+}
